@@ -4,9 +4,9 @@ import socket
 class Server(object):
     """
     An adventure game socket server
-    
+
     An instance's methods share the following variables:
-    
+
     * self.socket: a "bound" server socket, as produced by socket.bind()
     * self.client_connection: a "connection" socket as produced by socket.accept()
     * self.input_buffer: a string that has been read from the connected client and
@@ -17,14 +17,14 @@ class Server(object):
     * self.done: A boolean, False until the client is ready to disconnect
     * self.room: one of 0, 1, 2, 3. This signifies which "room" the client is in,
       according to the following map:
-      
+
                                      3                      N
                                      |                      ^
                                  1 - 0 - 2                  |
-                                 
+
     When a client connects, they are greeted with a welcome message. And then they can
     move through the connected rooms. For example, on connection:
-    
+
     OK! Welcome to Realms of Venture! This room has brown wall paper!  (S)
     move north                                                         (C)
     OK! This room has white wallpaper.                                 (S)
@@ -36,7 +36,7 @@ class Server(object):
     OK! This room has a green floor!                                   (S)
     quit                                                               (C)
     OK! Goodbye!                                                       (S)
-    
+
     Note that we've annotated server and client messages with *(S)* and *(C)*, but
     these won't actually appear in server/client communication. Also, you'll be
     free to develop any room descriptions you like: the only requirement is that
@@ -80,17 +80,20 @@ class Server(object):
         """
 
         # TODO: YOUR CODE HERE
-
-        pass
+        return [
+            "Brown wallpaper covers the walls, bathing the room in warm light reflected from the half-drawn curtains.",
+            "White wallpaper covers the walls, bathing the room in cool light reflected from the half-drawn curtains.",
+            "Gold wallpaper covers the walls, bathing the room in warm light reflected from the half-drawn curtains.",
+            "Violet wallpaper covers the walls, bathing the room in cool light reflected from the half-drawn curtains."][room_number]
 
     def greet(self):
         """
         Welcome a client to the game.
-        
+
         Puts a welcome message and the description of the client's current room into
         the output buffer.
-        
-        :return: None 
+
+        :return: None
         """
         self.output_buffer = "Welcome to {}! {}".format(
             self.game_name,
@@ -101,41 +104,63 @@ class Server(object):
         """
         Retrieve input from the client_connection. All messages from the client
         should end in a newline character: '\n'.
-        
+
         This is a BLOCKING call. It should not return until there is some input from
         the client to receive.
-         
-        :return: None 
+
+        :return: None
         """
 
         # TODO: YOUR CODE HERE
 
-        pass
+        received = b''
+        while b'\n' not in received:
+            received += self.client_connection.recv(16)
+
+        self.input_buffer = received.decode()
 
     def move(self, argument):
         """
         Moves the client from one room to another.
-        
+
         Examines the argument, which should be one of:
-        
+
         * "north"
         * "south"
         * "east"
         * "west"
-        
+
         "Moves" the client into a new room by adjusting self.room to reflect the
         number of the room that the client has moved into.
-        
+
         Puts the room description (see `self.room_description`) for the new room
         into "self.output_buffer".
-        
+
         :param argument: str
         :return: None
         """
 
         # TODO: YOUR CODE HERE
 
-        pass
+        if self.room == 0 and argument == "north":
+            self.room = 3
+
+        if self.room == 0 and argument == "west":
+            self.room = 1
+
+        if self.room == 0 and argument == "east":
+            self.room = 2
+
+        if self.room == 1 and argument == "east":
+            self.room = 0
+
+        if self.room == 2 and argument == "west":
+            self.room = 0
+
+        if self.room == 3 and argument == "south":
+            self.room = 0
+
+        self.output_buffer = self.room_description(self.room)
 
     def say(self, argument):
         """
@@ -153,7 +178,7 @@ class Server(object):
 
         # TODO: YOUR CODE HERE
 
-        pass
+        self.output_buffer = 'You say, "{}"'.format(argument)
 
     def quit(self, argument):
         """
@@ -168,8 +193,9 @@ class Server(object):
         """
 
         # TODO: YOUR CODE HERE
-
-        pass
+        self.done = True
+        self.output_buffer = "Goodbye!"
+        
 
     def route(self):
         """
@@ -185,7 +211,15 @@ class Server(object):
 
         # TODO: YOUR CODE HERE
 
-        pass
+        received = self.input_buffer.split(" ")
+
+        command = received.pop(0)
+        arguments = " ".join(received)
+        {
+            'quit': self.quit,
+            'move': self.move,
+            'say': self.say,
+        }[command](arguments)
 
     def push_output(self):
         """
@@ -198,8 +232,7 @@ class Server(object):
         """
 
         # TODO: YOUR CODE HERE
-
-        pass
+        self.client_connection.sendall(b"OK! " + self.output_buffer.encode() + b"\n")
 
     def serve(self):
         self.connect()
