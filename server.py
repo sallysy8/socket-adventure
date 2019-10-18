@@ -52,7 +52,6 @@ class Server(object):
         self.socket = None
         self.client_connection = None
         self.port = port
-
         self.room = 0
 
     def connect(self):
@@ -67,7 +66,7 @@ class Server(object):
 
         self.client_connection, address = self.socket.accept()
 
-    def room_description(self, room_number):
+    def room_description(self, room_num):
         """
         For any room_number in 0, 1, 2, 3, return a string that "describes" that
         room.
@@ -80,11 +79,14 @@ class Server(object):
         """
 
         # TODO: YOUR CODE HERE
-        return [
-            "Brown wallpaper covers the walls, bathing the room in warm light reflected from the half-drawn curtains.",
-            "White wallpaper covers the walls, bathing the room in cool light reflected from the half-drawn curtains.",
-            "Gold wallpaper covers the walls, bathing the room in warm light reflected from the half-drawn curtains.",
-            "Violet wallpaper covers the walls, bathing the room in cool light reflected from the half-drawn curtains."][room_number]
+        if room_num == 0:
+            self.output_buffer = "You are in the room with the white wallpaper."
+        elif room_num == 1:
+            self.output_buffer = "You are in the room with the green wallpaper."
+        elif room_num == 2:
+            self.output_buffer = "You are in the room with the brown wallpaper."
+        elif room_num == 3:
+            self.output_buffer = "You are in the room with the mauve wallpaper."
 
     def greet(self):
         """
@@ -160,18 +162,18 @@ class Server(object):
         if self.room == 3 and argument == "south":
             self.room = 0
 
-        self.output_buffer = self.room_description(self.room)
+        self.room_description(self.room)
 
     def say(self, argument):
         """
         Lets the client speak by putting their utterance into the output buffer.
-        
+
         For example:
         `self.say("Is there anybody here?")`
         would put
         `You say, "Is there anybody here?"`
         into the output buffer.
-        
+
         :param argument: str
         :return: None
         """
@@ -183,11 +185,11 @@ class Server(object):
     def quit(self, argument):
         """
         Quits the client from the server.
-        
+
         Turns `self.done` to True and puts "Goodbye!" onto the output buffer.
-        
+
         Ignore the argument.
-        
+
         :param argument: str
         :return: None
         """
@@ -195,23 +197,24 @@ class Server(object):
         # TODO: YOUR CODE HERE
         self.done = True
         self.output_buffer = "Goodbye!"
-        
 
     def route(self):
         """
         Examines `self.input_buffer` to perform the correct action (move, quit, or
         say) on behalf of the client.
-        
+
         For example, if the input buffer contains "say Is anybody here?" then `route`
         should invoke `self.say("Is anybody here?")`. If the input buffer contains
         "move north", then `route` should invoke `self.move("north")`.
-        
+
         :return: None
         """
 
         # TODO: YOUR CODE HERE
+        if self.input_buffer == "quit":
+            self.quit(None)
 
-        received = self.input_buffer.split(" ")
+        received = self.input_buffer.split("\n")[0].split(" ")
 
         command = received.pop(0)
         arguments = " ".join(received)
@@ -224,15 +227,16 @@ class Server(object):
     def push_output(self):
         """
         Sends the contents of the output buffer to the client.
-        
+
         This method should prepend "OK! " to the output and append "\n" before
         sending it.
-        
+
         :return: None 
         """
 
         # TODO: YOUR CODE HERE
-        self.client_connection.sendall(b"OK! " + self.output_buffer.encode() + b"\n")
+        self.client_connection.sendall(
+            b"OK! " + self.output_buffer.encode() + b"\n")
 
     def serve(self):
         self.connect()
